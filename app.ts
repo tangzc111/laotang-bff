@@ -14,6 +14,7 @@ import ErrorHandler from '@middlewares/ErrorHandler';
 import { asValue, createContainer, Lifetime } from 'awilix';
 import { loadControllers, scopePerRequest } from 'awilix-koa';
 import koa from 'koa';
+import bodyParser from 'koa-bodyparser';
 import serve from 'koa-static';
 import historyApiFallback from 'koa2-connect-history-api-fallback';
 import { configure, getLogger } from 'log4js';
@@ -31,6 +32,8 @@ configure({
   categories: { default: { appenders: ['cheese'], level: 'error' } },
 });
 const { port, viewDir, memoryFlag, staticDir } = config;
+// 解析请求体，确保路由可以从 ctx.request.body 读取数据
+app.use(bodyParser());
 // 静态资源
 app.use(serve(staticDir));
 // 创建容器
