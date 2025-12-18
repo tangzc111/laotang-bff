@@ -71,8 +71,9 @@ const logger = getLogger('cheese');
 ErrorHandler.error(app, logger);
 // 把所有的路由全部 load 进来
 app.use(loadControllers(`${__dirname}/routers/*{.ts,.js}`));
-if (process.env.NODE_ENV === 'development') {
-  // ECS EC2 本地运行listen
+
+// 本地或服务器常驻进程都需要主动监听端口（Serverless 场景除外）
+if (process.env.SERVERLESS !== 'true') {
   app.listen(port || 3000, () => {
     console.log(`Server is running on port ${port}`);
   });
