@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../generated/prisma/client';
+import type { PrismaClient } from '@prisma/client';
 
 export default class UserService {
   private prismaWriteClient: PrismaClient;

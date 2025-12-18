@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 let prismaWriteInstance: PrismaClient | null = null;
 let prismaReadInstance: PrismaClient | null = null;
