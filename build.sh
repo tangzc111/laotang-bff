@@ -6,6 +6,10 @@ set -e  # 遇到错误立即退出
 
 echo "🔨 开始构建..."
 
+# 0. 生成 Prisma Client（确保 schema 变更后类型同步）
+echo "🛠 生成 Prisma Client..."
+yarn prisma generate
+
 # 1. 编译 TypeScript
 echo "📦 编译 TypeScript..."
 tsc
