@@ -93,7 +93,15 @@ export default class UserController {
   @route('/:id')
   async updateUser(ctx: Context) {
     try {
-      const { id } = ctx.params;
+      const id = Number(ctx.params.id);
+      if (Number.isNaN(id)) {
+        ctx.status = 400;
+        ctx.body = {
+          code: -1,
+          message: 'Invalid user id',
+        };
+        return;
+      }
       const { email, name } = (ctx.request as RequestWithBody<{ email?: string; name?: string }>).body;
 
       const user = await this.userService.updateUser(id, { email, name });
@@ -115,7 +123,15 @@ export default class UserController {
   @route('/:id')
   async deleteUser(ctx: Context) {
     try {
-      const { id } = ctx.params;
+      const id = Number(ctx.params.id);
+      if (Number.isNaN(id)) {
+        ctx.status = 400;
+        ctx.body = {
+          code: -1,
+          message: 'Invalid user id',
+        };
+        return;
+      }
       await this.userService.deleteUser(id);
       ctx.body = {
         code: 0,
