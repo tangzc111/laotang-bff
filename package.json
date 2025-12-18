@@ -19,6 +19,7 @@
   "description": "",
   "dependencies": {
     "@koa/ejs": "^5.1.0",
+    "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "awilix": "^12.0.5",
     "awilix-koa": "^11.1.0",
