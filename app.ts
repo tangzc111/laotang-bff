@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { addAliases } from 'module-alias';
 
 addAliases({
@@ -16,7 +17,12 @@ import koa from 'koa';
 import serve from 'koa-static';
 import historyApiFallback from 'koa2-connect-history-api-fallback';
 import { configure, getLogger } from 'log4js';
-import { createPrismaClient } from './services/prisma.service';
+import { getPrismaReadClient, getPrismaWriteClient } from './services/prisma.service';
+
+// Allow self-signed certificates when explicitly configured
+if (process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'false' || process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === '0') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
 
 const app = new koa();
 // 日志系统
@@ -32,7 +38,8 @@ const container = createContainer();
 
 //注册 Prisma Client 到容器
 container.register({
-  prismaClient: asValue(createPrismaClient()),
+  prismaWriteClient: asValue(getPrismaWriteClient()),
+  prismaReadClient: asValue(getPrismaReadClient()),
 });
 
 // 所有的可以被注入的代码都在container中

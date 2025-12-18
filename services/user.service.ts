@@ -1,14 +1,19 @@
 import type { PrismaClient } from '../generated/prisma/client';
 
 export default class UserService {
-  private prismaClient: PrismaClient;
+  private prismaWriteClient: PrismaClient;
+  private prismaReadClient: PrismaClient;
 
-  constructor({ prismaClient }: { prismaClient: PrismaClient }) {
-    this.prismaClient = prismaClient;
+  constructor({
+    prismaWriteClient,
+    prismaReadClient,
+  }: { prismaWriteClient: PrismaClient; prismaReadClient: PrismaClient }) {
+    this.prismaWriteClient = prismaWriteClient;
+    this.prismaReadClient = prismaReadClient;
   }
 
   async createUser(email: string, name?: string) {
-    return await this.prismaClient.user.create({
+    return await this.prismaWriteClient.user.create({
       data: {
         email,
         name,
@@ -17,24 +22,24 @@ export default class UserService {
   }
 
   async findUserByEmail(email: string) {
-    return await this.prismaClient.user.findUnique({
+    return await this.prismaReadClient.user.findUnique({
       where: { email },
     });
   }
 
   async getAllUsers() {
-    return await this.prismaClient.user.findMany();
+    return await this.prismaReadClient.user.findMany();
   }
 
   async updateUser(id: string, data: { name?: string; email?: string }) {
-    return await this.prismaClient.user.update({
+    return await this.prismaWriteClient.user.update({
       where: { id },
       data,
     });
   }
 
   async deleteUser(id: string) {
-    return await this.prismaClient.user.delete({
+    return await this.prismaWriteClient.user.delete({
       where: { id },
     });
   }
