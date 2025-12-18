@@ -26,6 +26,18 @@ if (process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'false' || process.env.DATA
 }
 
 const app = new koa();
+
+// 简单 CORS 处理，允许跨域访问
+app.use(async (ctx, next) => {
+  ctx.set('Access-Control-Allow-Origin', '*');
+  ctx.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  ctx.set('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (ctx.method === 'OPTIONS') {
+    ctx.status = 204;
+    return;
+  }
+  await next();
+});
 // 日志系统
 configure({
   appenders: { cheese: { type: 'file', filename: `${__dirname}/logs/lt.log` } },
