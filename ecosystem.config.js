@@ -7,6 +7,7 @@ module.exports = {
       cwd: __dirname,
       script: path.join(__dirname, 'dist', 'app.js'), // 使用构建后的 JS 文件
       interpreter: process.execPath,
+      env_file: path.join(__dirname, '.env.production'),
 
       // 实例配置 - 使用所有 CPU 核心
       instances: 'max', // 自动使用所有 CPU 核数
@@ -37,6 +38,7 @@ module.exports = {
         NODE_ENV: 'production',
         TS_NODE_PROJECT: './tsconfig.json',
         PORT: 8082, // cluster 模式会自动递增
+        DATABASE_SSL_REJECT_UNAUTHORIZED: 'true',
       },
 
       // 日志配置
