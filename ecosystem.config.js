@@ -38,7 +38,7 @@ module.exports = {
         NODE_ENV: 'production',
         TS_NODE_PROJECT: './tsconfig.json',
         PORT: 8082, // cluster 模式会自动递增
-        DATABASE_SSL_REJECT_UNAUTHORIZED: 'true',
+        DATABASE_SSL_REJECT_UNAUTHORIZED: 'false',
       },
 
       // 日志配置
