@@ -1,0 +1,14 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "laotang-bff-sam"
+resolve_s3 = true
+s3_prefix = "laotang-bff-sam"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "StageName=\"dev\" VpcId=\"vpc-0e14a342ea0cb8b23\" DatabaseSslRejectUnauthorized=\"false\" PublicSubnetIds=\"subnet-03f873c304a29bdf8\" PrivateSubnetIds=\"subnet-04d84497d1800f5ab,subnet-0df2646d08e3d8621,subnet-0ffee4e49c8100f37\""
+image_repositories = []
+
+[default.global.parameters]
+region = "us-west-2"

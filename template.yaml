@@ -1,12 +1,45 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+Description: Koa BFF deployed with AWS SAM (Lambda + API Gateway)
+
+Parameters:
+  StageName:
+    Type: String
+    Default: dev
+    Description: API Gateway stage name
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-0e14a342ea0cb8b23
+    Description: VPC that contains the Lambda subnets
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+    Description: Primary database connection string (e.g. PostgreSQL)
+  DatabaseReadUrl:
+    Type: String
+    NoEcho: true
+    Description: Read-replica database connection string (optional, fallback to DatabaseUrl)
+  DatabaseSslRejectUnauthorized:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false", "0", "1"]
+    Description: Whether to reject unauthorized SSL certs (set false/0 for self-signed)
+  PublicSubnetIds:
+    Type: CommaDelimitedList
+    Default: subnet-03f873c304a29bdf8
+    Description: Public subnets (route table指向 IGW)；示例为 us-west-2a
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Default: subnet-04d84497d1800f5ab,subnet-0df2646d08e3d8621,subnet-0ffee4e49c8100f37
+    Description: Private subnets (route table指向 NAT) for Lambda ENIs
 
 Globals:
   Function:
     Timeout: 30
     MemorySize: 1024
     Runtime: nodejs20.x
-    Architectures: ['arm64']
+    Architectures:
+      - arm64
     Environment:
       Variables:
         NODE_OPTIONS: '--enable-source-maps'
@@ -21,54 +54,84 @@ Globals:
       MaxAge: 600
 
 Resources:
-  NodeModulesLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: nest-dependencies
-      Description: Node modules for Nest.js application
-      ContentUri: layer/
-      CompatibleRuntimes:
-        - nodejs20.x
-      RetentionPolicy: Retain
-
-  Api:
+  ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: dev
+      StageName: !Ref StageName
       BinaryMediaTypes:
         - 'image/*'
         - 'multipart/form-data'
       Auth:
         DefaultAuthorizer: NONE
+      EndpointConfiguration: REGIONAL
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
 
-  KoaFunction:
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Outbound-only SG for Lambda to reach internet via NAT
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  LaotangBffLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: laotang-dependencies
+      Description: Node modules layer for laotang-bff
+      ContentUri: layer/
+      CompatibleRuntimes:
+        - nodejs20.x
+      RetentionPolicy: Retain
+
+  LaotangBffFunction:
     Type: AWS::Serverless::Function
     Metadata:
       SkipBuild: true
     Properties:
-      Handler: lambda.handler
+      FunctionName: laotang-bff
+      Description: Koa BFF packaged via serverless-http
+      Handler: dist/lambda.handler
       CodeUri: ./dist
       MemorySize: 3008
       Timeout: 30
       Layers:
-        - !Ref NodeModulesLayer
+        - !Ref LaotangBffLayer
       Policies:
         - VPCAccessPolicy: {}
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Ref PrivateSubnetIds
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          DATABASE_READ_URL: !Ref DatabaseReadUrl
+          DATABASE_SSL_REJECT_UNAUTHORIZED: !Ref DatabaseSslRejectUnauthorized
+          NODE_OPTIONS: '--enable-source-maps'
       Events:
-        ApiEvent:
+        AnyProxy:
           Type: Api
           Properties:
+            RestApiId: !Ref ApiGatewayApi
             Path: /{proxy+}
             Method: ANY
-            RestApiId: !Ref Api
-            Auth:
-              Authorizer: NONE
+        Root:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /
+            Method: ANY
       AutoPublishAlias: live
 
 Outputs:
   ApiEndpoint:
-    Description: API Gateway endpoint URL
-    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/dev'
+    Description: Invoke URL for the deployed API Gateway stage
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"
   FunctionArn:
-    Description: Lambda Function ARN
-    Value: !GetAtt KoaFunction.Arn
+    Description: Lambda ARN
+    Value: !GetAtt LaotangBffFunction.Arn

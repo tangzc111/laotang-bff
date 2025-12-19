@@ -30,7 +30,10 @@ export default class UserService {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await this.prismaReadClient.user.findMany();
+    // Limit to 200 records to avoid timeouts on large tables
+    return await this.prismaReadClient.user.findMany({
+      take: 120,
+    });
   }
 
   async updateUser(id: UserId, data: { name?: string; email?: string }): Promise<User> {

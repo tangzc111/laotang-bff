@@ -19,6 +19,8 @@ import serve from 'koa-static';
 import historyApiFallback from 'koa2-connect-history-api-fallback';
 import { configure, getLogger } from 'log4js';
 import { getPrismaReadClient, getPrismaWriteClient } from './services/prisma.service';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // Allow self-signed certificates when explicitly configured
 if (process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'false' || process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === '0') {
@@ -38,9 +40,14 @@ app.use(async (ctx, next) => {
   }
   await next();
 });
-// 日志系统
+// 日志系统：Lambda 默认使用 /tmp，可通过 SERVERLESS/LAMBDA_TASK_ROOT 自动判断
+const isServerless = process.env.SERVERLESS === 'true' || !!process.env.LAMBDA_TASK_ROOT;
+const logDir = isServerless ? '/tmp/logs' : path.join(__dirname, 'logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
 configure({
-  appenders: { cheese: { type: 'file', filename: `${__dirname}/logs/lt.log` } },
+  appenders: { cheese: { type: 'file', filename: path.join(logDir, 'lt.log') } },
   categories: { default: { appenders: ['cheese'], level: 'error' } },
 });
 const { port, viewDir, memoryFlag, staticDir } = config;

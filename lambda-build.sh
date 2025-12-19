@@ -1,9 +1,11 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "❌ Environment parameter is required! Please use: ./build.sh [development|production|test]"
+    echo "❌ Environment parameter is required! Please use: ./lambda-build.sh [development|production|test]"
     exit 1
 fi
+
+set -euo pipefail
 
 ENV=$1
 ENV_FILE=".env.$ENV"
@@ -23,6 +25,12 @@ rm -rf layer/
 # 创建必要的目录
 mkdir -p dist/
 mkdir -p layer/nodejs
+
+# 复制 lockfile 以确保生产依赖安装可复现
+cp yarn.lock layer/nodejs/
+cp package.json layer/nodejs/
+# 复制 Prisma schema，确保生成的客户端落在 layer 目录
+cp -r prisma layer/nodejs/
 
 # 使用webpack构建应用
 echo "🏗️ Building application with webpack..."
@@ -52,6 +60,17 @@ yarn run build
 cd layer/nodejs
 echo "📦 Installing layer dependencies..."
 yarn install --production --frozen-lockfile
+
+echo "🛠 Generating Prisma Client into layer..."
+../../node_modules/.bin/prisma generate --schema ./prisma/schema.prisma
+# Prisma 生成后不再需要 schema 目录，可选清理
+rm -rf prisma
+
+# 确认 Prisma Client 已生成到 layer（否则直接失败）
+if [ ! -f node_modules/.prisma/client/default.js ]; then
+    echo "❌ Prisma client was not generated into layer/nodejs/node_modules/.prisma/client"
+    exit 1
+fi
 
 echo "📊 Final layer size:"
 du -sh node_modules/
