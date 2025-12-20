@@ -1,7 +1,7 @@
 import { GET, route } from 'awilix-koa';
 import type { Context } from 'koa';
 
-@route('/')
+@route('/index')
 class IndexController {
   @GET()
   async actionList(ctx: Context) {
